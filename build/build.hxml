@@ -1,0 +1,3 @@
+-cp ../src
+-main Biniu
+-js ../bin/Biniu.js
