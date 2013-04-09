@@ -150,8 +150,7 @@ class Biniu
 		//method to call
 		var func = Reflect.field(biniuCallbacks, components[0]);
 		
-		//first arg is always the context
-		var resolvedArgs = [context];
+		var resolvedArgs = [];
 
 		for (i in 0...components.length)
 		{
@@ -173,7 +172,7 @@ class Biniu
 		}
 		
 		//call with resolved arg
-		return Reflect.callMethod(biniuCallbacks, func, resolvedArgs);
+		return Reflect.callMethod(biniuCallbacks, func, [context, resolvedArgs]);
 	}
 	
 	/**

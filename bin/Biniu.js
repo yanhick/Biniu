@@ -45,7 +45,7 @@ Biniu.prototype = {
 	,executeBiniu: function(components,context,biniuCallbacks) {
 		if(!Reflect.hasField(biniuCallbacks,components[0])) throw "first value must be a registered method";
 		var func = Reflect.field(biniuCallbacks,components[0]);
-		var resolvedArgs = [context];
+		var resolvedArgs = [];
 		var _g1 = 0, _g = components.length;
 		while(_g1 < _g) {
 			var i = _g1++;
@@ -56,7 +56,7 @@ Biniu.prototype = {
 				} else resolvedArgs.push(this.resolveArgument(components[i],context,biniuCallbacks));
 			}
 		}
-		return func.apply(biniuCallbacks,resolvedArgs);
+		return func.apply(biniuCallbacks,[context,resolvedArgs]);
 	}
 	,parseBiniu: function(biniu) {
 		var components = biniu.split(" ");
@@ -156,62 +156,116 @@ Biniulib.prototype = {
 			return true;
 		}
 	}
-	,toggleClass: function(context,name) {
-		var element = context.node;
-		var className = name;
-		if(this.hasClass(element,className)) this.removeClass(context,className); else this.addClass(context,className);
+	,toggleClass: function(context,args) {
+		var _g1 = 0, _g = args.length;
+		while(_g1 < _g) {
+			var i = _g1++;
+			var element = context.node;
+			var className = args[i];
+			if(this.hasClass(element,className)) this.removeClass(context,args); else this.addClass(context,args);
+		}
 	}
-	,removeClass: function(context,name) {
-		var element = context.node;
-		var className = name;
-		if(element.className == null || StringTools.trim(element.className) == "") return;
-		var classNamesToKeep = new Array();
-		var cns = className.split(" ");
-		Lambda.iter(element.className.split(" "),function(ecn) {
-			if(!Lambda.has(cns,ecn)) classNamesToKeep.push(ecn);
-		});
-		element.className = classNamesToKeep.join(" ");
+	,removeClass: function(context,args) {
+		var _g1 = 0, _g = args.length;
+		while(_g1 < _g) {
+			var i = _g1++;
+			var element = context.node;
+			var className = args[i];
+			if(element.className == null || StringTools.trim(element.className) == "") return;
+			var classNamesToKeep = [new Array()];
+			var cns = [className.split(" ")];
+			Lambda.iter(element.className.split(" "),(function(cns,classNamesToKeep) {
+				return function(ecn) {
+					if(!Lambda.has(cns[0],ecn)) classNamesToKeep[0].push(ecn);
+				};
+			})(cns,classNamesToKeep));
+			element.className = classNamesToKeep[0].join(" ");
+		}
 	}
-	,addClass: function(context,name) {
-		var element = context.node;
-		var className = name;
-		if(element.className == null) element.className = "";
-		Lambda.iter(className.split(" "),function(cn) {
-			if(!Lambda.has(element.className.split(" "),cn)) {
-				if(element.className != "") element.className += " ";
-				element.className += cn;
-			}
-		});
+	,addClass: function(context,args) {
+		var _g1 = 0, _g = args.length;
+		while(_g1 < _g) {
+			var i = _g1++;
+			var element = [context.node];
+			var className = args[i];
+			if(element[0].className == null) element[0].className = "";
+			Lambda.iter(className.split(" "),(function(element) {
+				return function(cn) {
+					if(!Lambda.has(element[0].className.split(" "),cn)) {
+						if(element[0].className != "") element[0].className += " ";
+						element[0].className += cn;
+					}
+				};
+			})(element));
+		}
 	}
-	,toggleStyle: function(context,styleName,value) {
-		if(Reflect.field(context.node.style,styleName) != "") this.removeStyle(context,styleName); else this.setStyle(context,styleName,value);
+	,toggleStyle: function(context,args) {
+		if(Reflect.field(context.node.style,args[0]) != "") this.removeStyle(context,args); else this.setStyle(context,args);
 	}
-	,removeStyle: function(context,styleName) {
-		context.node.style[styleName] = null;
+	,removeStyle: function(context,args) {
+		context.node.style[args[0]] = null;
 	}
-	,setStyle: function(context,styleName,value) {
-		context.node.style[styleName] = value;
+	,setStyle: function(context,args) {
+		context.node.style[args[0]] = args[1];
 	}
 	,getAttribute: function(context,attr) {
 		return context.node.getAttribute(attr);
 	}
-	,setAttribute: function(context,attr,value) {
-		context.node.setAttribute(attr,value);
+	,setAttribute: function(context,args) {
+		context.node.setAttribute(args[0],args[1]);
 	}
-	,div: function(context,a,b) {
-		return Std.parseFloat(a) / Std.parseFloat(b);
+	,concat: function(context,args) {
+		var concat = "";
+		var _g1 = 0, _g = args.length;
+		while(_g1 < _g) {
+			var i = _g1++;
+			concat += Std.string(args[i]);
+		}
+		return concat;
 	}
-	,mul: function(context,a,b) {
-		return Std.parseFloat(a) * Std.parseFloat(b);
+	,div: function(context,args) {
+		var sum = 0.0;
+		var _g1 = 0, _g = args.length;
+		while(_g1 < _g) {
+			var i = _g1++;
+			sum /= Std.parseFloat(args[i]);
+		}
+		return sum;
 	}
-	,sub: function(context,a,b) {
-		return Std.parseFloat(a) - Std.parseFloat(b);
+	,mul: function(context,args) {
+		var sum = 0.0;
+		var _g1 = 0, _g = args.length;
+		while(_g1 < _g) {
+			var i = _g1++;
+			sum *= Std.parseFloat(args[i]);
+		}
+		return sum;
 	}
-	,add: function(context,a,b) {
-		return Std.parseFloat(a) + Std.parseFloat(b);
+	,sub: function(context,args) {
+		var sum = 0.0;
+		var _g1 = 0, _g = args.length;
+		while(_g1 < _g) {
+			var i = _g1++;
+			sum -= Std.parseFloat(args[i]);
+		}
+		return sum;
 	}
-	,log: function(context,msg) {
-		console.log(msg);
+	,add: function(context,args) {
+		var sum = 0.0;
+		var _g1 = 0, _g = args.length;
+		while(_g1 < _g) {
+			var i = _g1++;
+			sum += Std.parseFloat(args[i]);
+		}
+		return sum;
+	}
+	,log: function(context,args) {
+		var _g = 0;
+		while(_g < args.length) {
+			var arg = args[_g];
+			++_g;
+			console.log(arg);
+		}
 	}
 	,__class__: Biniulib
 }

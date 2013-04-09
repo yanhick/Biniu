@@ -39,42 +39,96 @@ class Biniulib
 		}
 	}
 	
-	function log(context, msg)
+	function log(context, args:Array<Dynamic>)
 	{
-		trace(msg);
+		for (arg in args)
+		{
+			trace(arg);
+		}
+		
 	}
 	
 	//////////////////
 	// OPERATORS
 	/////////////////
 	
-	function add(context, a, b)
+	function add(context, args:Array<Dynamic>)
 	{
-		return Std.parseFloat(a) + Std.parseFloat(b);
+		var sum = 0.0;
+		
+		for (i in 0...args.length)
+		{
+			sum += Std.parseFloat(args[i]);
+		}
+		
+		return sum;
 	}
 	
-	function sub(context, a, b)
+	function sub(context, args:Array<Dynamic>)
 	{
-		return Std.parseFloat(a) - Std.parseFloat(b);
+		var sum = 0.0;
+		
+		for (i in 0...args.length)
+		{
+			sum -= Std.parseFloat(args[i]);
+		}
+		
+		return sum;
 	}
 	
-	function mul(context, a, b)
+	function mul(context, args:Array<Dynamic>)
 	{
-		return Std.parseFloat(a) * Std.parseFloat(b);
+		var sum = 0.0;
+		
+		for (i in 0...args.length)
+		{
+			sum *= Std.parseFloat(args[i]);
+		}
+		
+		return sum;
 	}
 	
-	function div(context, a, b)
+	function div(context, args:Array<Dynamic>)
 	{
-		return Std.parseFloat(a) / Std.parseFloat(b);
+		var sum = 0.0;
+		
+		for (i in 0...args.length)
+		{
+			sum /= Std.parseFloat(args[i]);
+		}
+		
+		return sum;
 	}
+	
+	//////////////////
+	// String
+	/////////////////
+	
+	function concat(context, args:Array<Dynamic>)
+	{
+		var concat = "";
+		
+		for (i in 0...args.length)
+		{
+			concat += Std.string(args[i]);
+		}
+		
+		return concat;
+	}
+	
+	//////////////////
+	// event
+	/////////////////
+	
+	
 	
 	//////////////////
 	// DOM
 	/////////////////
 	
-	function setAttribute(context, attr, value)
+	function setAttribute(context, args:Array<Dynamic>)
 	{
-		context.node.setAttribute(attr, value);
+		context.node.setAttribute(args[0], args[1]);
 	}
 	
 	function getAttribute(context, attr)
@@ -86,26 +140,25 @@ class Biniulib
 	// INLINE STYLE
 	/////////////////
 	
-	function setStyle(context, styleName, value)
+	function setStyle(context, args:Array<Dynamic>)
 	{
-		Reflect.setField(context.node.style, styleName, value);
+		Reflect.setField(context.node.style, args[0], args[1]);
 	}
 	
-	function removeStyle(context, styleName)
+	function removeStyle(context, args:Array<Dynamic>)
 	{
-		Reflect.setField(context.node.style, styleName, null);
+		Reflect.setField(context.node.style, args[0], null);
 	}
 	
-	function toggleStyle(context, styleName, value)
+	function toggleStyle(context, args:Array<Dynamic>)
 	{
-		if (Reflect.field(context.node.style, styleName) != "")
+		if (Reflect.field(context.node.style, args[0]) != "")
 		{
-			
-			removeStyle(context, styleName);
+			removeStyle(context, args);
 		}
 		else
 		{
-			setStyle(context, styleName, value);
+			setStyle(context, args);
 		}
 	}
 	
@@ -113,39 +166,48 @@ class Biniulib
 	// BRIX CLASS METHODS
 	/////////////////
 	
-	function addClass(context, name)
+	function addClass(context, args:Array<Dynamic>)
 	{
-		var element:HtmlDom = context.node;
-		var className = name;
-		
-		if (element.className == null) element.className = "";
-		Lambda.iter( className.split(" "), function(cn:String) { if (!Lambda.has(element.className.split(" "), cn)) { if (element.className != "") { element.className += " "; } element.className += cn; } } );
+		for (i in 0...args.length)
+		{
+			var element:HtmlDom = context.node;
+			var className = args[i];
+			
+			if (element.className == null) element.className = "";
+			Lambda.iter( className.split(" "), function(cn:String) { if (!Lambda.has(element.className.split(" "), cn)) { if (element.className != "") { element.className += " "; } element.className += cn; } } );
+		}
 	}
 	
-	function removeClass(context, name)
+	function removeClass(context, args:Array<Dynamic>)
 	{
-		var element:HtmlDom = context.node;
-		var className = name;
-		
-		if (element.className == null || element.className.trim() == "") return;
+		for (i in 0...args.length)
+		{
+			var element:HtmlDom = context.node;
+			var className = args[i];
+			
+			if (element.className == null || element.className.trim() == "") return;
 
-		var classNamesToKeep:Array<String> = new Array();
-		var cns = className.split(" ");
+			var classNamesToKeep:Array<String> = new Array();
+			var cns = className.split(" ");
 
-		Lambda.iter( element.className.split(" "), function(ecn:String) { if (!Lambda.has(cns, ecn)) { classNamesToKeep.push(ecn); } } );
+			Lambda.iter( element.className.split(" "), function(ecn:String) { if (!Lambda.has(cns, ecn)) { classNamesToKeep.push(ecn); } } );
 
-		element.className = classNamesToKeep.join(" ");
+			element.className = classNamesToKeep.join(" ");
+		}
 	}
 	
-	function toggleClass(context, name:String) 
+	function toggleClass(context, args:Array<Dynamic>)
 	{
-		var element:HtmlDom = context.node;
-		var className = name;
-		
-		if(hasClass(element, className))
-			removeClass(context, className);
-		else
-			addClass(context, className);
+		for (i in 0...args.length)
+		{
+			var element:HtmlDom = context.node;
+			var className = args[i];
+			
+			if(hasClass(element, className))
+				removeClass(context, args);
+			else
+				addClass(context, args);
+		}
 	}
 	
 	//////////////////
