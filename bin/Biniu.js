@@ -57,6 +57,8 @@ Biniu.prototype = {
 	}
 	,parseBiniu: function(biniu) {
 		var components = biniu.split(" ");
+		console.log(components);
+		var ret = [];
 		var _g1 = 0, _g = components.length;
 		while(_g1 < _g) {
 			var i = _g1++;
@@ -64,8 +66,9 @@ Biniu.prototype = {
 			components[i] = StringTools.replace(components[i],"\n","");
 			components[i] = StringTools.replace(components[i],"\r","");
 			components[i] = StringTools.replace(components[i],"\t","");
+			if(components[i] != "") ret.push(components[i]);
 		}
-		return components;
+		return ret;
 	}
 	,executeBinius: function(binius,context,biniuCallbacks) {
 		var _g = 0, _g1 = binius.split(",");
@@ -118,11 +121,85 @@ Biniu.prototype = {
 	,__class__: Biniu
 }
 var Biniulib = function() {
-	this.map = { log : $bind(this,this.log)};
+	this.map = { log : $bind(this,this.log), '+' : $bind(this,this.add), '-' : $bind(this,this.sub), '*' : $bind(this,this.mul), '/' : $bind(this,this.div), 'set-attr' : $bind(this,this.setAttribute), 'get-attr' : $bind(this,this.getAttribute), 'add-class' : $bind(this,this.addClass), 'remove-class' : $bind(this,this.removeClass), 'toggle-class' : $bind(this,this.toggleClass)};
 };
 Biniulib.__name__ = true;
+Biniulib.hasClass = function(element,className,orderedClassName) {
+	if(orderedClassName == null) orderedClassName = false;
+	if(element.className == null || StringTools.trim(element.className) == "" || className == null || StringTools.trim(className) == "") return false;
+	if(orderedClassName) {
+		var cns = className.split(" ");
+		var ecns = element.className.split(" ");
+		var result = Lambda.map(cns,function(cn) {
+			return Lambda.indexOf(ecns,cn);
+		});
+		var prevR = 0;
+		var $it0 = result.iterator();
+		while( $it0.hasNext() ) {
+			var r = $it0.next();
+			if(r < prevR) return false;
+			prevR = r;
+		}
+		return true;
+	} else {
+		var _g = 0, _g1 = className.split(" ");
+		while(_g < _g1.length) {
+			var cn = _g1[_g];
+			++_g;
+			if(cn == null || StringTools.trim(cn) == "") continue;
+			var found = Lambda.has(element.className.split(" "),cn);
+			if(!found) return false;
+		}
+		return true;
+	}
+}
 Biniulib.prototype = {
-	log: function(context,msg) {
+	toggleClass: function(context,name) {
+		var element = context.node;
+		var className = name;
+		if(Biniulib.hasClass(element,className)) this.removeClass(context,className); else this.addClass(context,className);
+	}
+	,removeClass: function(context,name) {
+		var element = context.node;
+		var className = name;
+		if(element.className == null || StringTools.trim(element.className) == "") return;
+		var classNamesToKeep = new Array();
+		var cns = className.split(" ");
+		Lambda.iter(element.className.split(" "),function(ecn) {
+			if(!Lambda.has(cns,ecn)) classNamesToKeep.push(ecn);
+		});
+		element.className = classNamesToKeep.join(" ");
+	}
+	,addClass: function(context,name) {
+		var element = context.node;
+		var className = name;
+		if(element.className == null) element.className = "";
+		Lambda.iter(className.split(" "),function(cn) {
+			if(!Lambda.has(element.className.split(" "),cn)) {
+				if(element.className != "") element.className += " ";
+				element.className += cn;
+			}
+		});
+	}
+	,getAttribute: function(context,attr) {
+		return context.node.getAttribute(attr);
+	}
+	,setAttribute: function(context,attr,value) {
+		context.node.setAttribute(attr,value);
+	}
+	,div: function(context,a,b) {
+		return Std.parseFloat(a) / Std.parseFloat(b);
+	}
+	,mul: function(context,a,b) {
+		return Std.parseFloat(a) * Std.parseFloat(b);
+	}
+	,sub: function(context,a,b) {
+		return Std.parseFloat(a) - Std.parseFloat(b);
+	}
+	,add: function(context,a,b) {
+		return Std.parseFloat(a) + Std.parseFloat(b);
+	}
+	,log: function(context,msg) {
 		console.log(msg);
 	}
 	,__class__: Biniulib
@@ -205,6 +282,255 @@ IntIter.prototype = {
 		return this.min < this.max;
 	}
 	,__class__: IntIter
+}
+var Lambda = function() { }
+Lambda.__name__ = true;
+Lambda.array = function(it) {
+	var a = new Array();
+	var $it0 = $iterator(it)();
+	while( $it0.hasNext() ) {
+		var i = $it0.next();
+		a.push(i);
+	}
+	return a;
+}
+Lambda.list = function(it) {
+	var l = new List();
+	var $it0 = $iterator(it)();
+	while( $it0.hasNext() ) {
+		var i = $it0.next();
+		l.add(i);
+	}
+	return l;
+}
+Lambda.map = function(it,f) {
+	var l = new List();
+	var $it0 = $iterator(it)();
+	while( $it0.hasNext() ) {
+		var x = $it0.next();
+		l.add(f(x));
+	}
+	return l;
+}
+Lambda.mapi = function(it,f) {
+	var l = new List();
+	var i = 0;
+	var $it0 = $iterator(it)();
+	while( $it0.hasNext() ) {
+		var x = $it0.next();
+		l.add(f(i++,x));
+	}
+	return l;
+}
+Lambda.has = function(it,elt,cmp) {
+	if(cmp == null) {
+		var $it0 = $iterator(it)();
+		while( $it0.hasNext() ) {
+			var x = $it0.next();
+			if(x == elt) return true;
+		}
+	} else {
+		var $it1 = $iterator(it)();
+		while( $it1.hasNext() ) {
+			var x = $it1.next();
+			if(cmp(x,elt)) return true;
+		}
+	}
+	return false;
+}
+Lambda.exists = function(it,f) {
+	var $it0 = $iterator(it)();
+	while( $it0.hasNext() ) {
+		var x = $it0.next();
+		if(f(x)) return true;
+	}
+	return false;
+}
+Lambda.foreach = function(it,f) {
+	var $it0 = $iterator(it)();
+	while( $it0.hasNext() ) {
+		var x = $it0.next();
+		if(!f(x)) return false;
+	}
+	return true;
+}
+Lambda.iter = function(it,f) {
+	var $it0 = $iterator(it)();
+	while( $it0.hasNext() ) {
+		var x = $it0.next();
+		f(x);
+	}
+}
+Lambda.filter = function(it,f) {
+	var l = new List();
+	var $it0 = $iterator(it)();
+	while( $it0.hasNext() ) {
+		var x = $it0.next();
+		if(f(x)) l.add(x);
+	}
+	return l;
+}
+Lambda.fold = function(it,f,first) {
+	var $it0 = $iterator(it)();
+	while( $it0.hasNext() ) {
+		var x = $it0.next();
+		first = f(x,first);
+	}
+	return first;
+}
+Lambda.count = function(it,pred) {
+	var n = 0;
+	if(pred == null) {
+		var $it0 = $iterator(it)();
+		while( $it0.hasNext() ) {
+			var _ = $it0.next();
+			n++;
+		}
+	} else {
+		var $it1 = $iterator(it)();
+		while( $it1.hasNext() ) {
+			var x = $it1.next();
+			if(pred(x)) n++;
+		}
+	}
+	return n;
+}
+Lambda.empty = function(it) {
+	return !$iterator(it)().hasNext();
+}
+Lambda.indexOf = function(it,v) {
+	var i = 0;
+	var $it0 = $iterator(it)();
+	while( $it0.hasNext() ) {
+		var v2 = $it0.next();
+		if(v == v2) return i;
+		i++;
+	}
+	return -1;
+}
+Lambda.concat = function(a,b) {
+	var l = new List();
+	var $it0 = $iterator(a)();
+	while( $it0.hasNext() ) {
+		var x = $it0.next();
+		l.add(x);
+	}
+	var $it1 = $iterator(b)();
+	while( $it1.hasNext() ) {
+		var x = $it1.next();
+		l.add(x);
+	}
+	return l;
+}
+var List = function() {
+	this.length = 0;
+};
+List.__name__ = true;
+List.prototype = {
+	map: function(f) {
+		var b = new List();
+		var l = this.h;
+		while(l != null) {
+			var v = l[0];
+			l = l[1];
+			b.add(f(v));
+		}
+		return b;
+	}
+	,filter: function(f) {
+		var l2 = new List();
+		var l = this.h;
+		while(l != null) {
+			var v = l[0];
+			l = l[1];
+			if(f(v)) l2.add(v);
+		}
+		return l2;
+	}
+	,join: function(sep) {
+		var s = new StringBuf();
+		var first = true;
+		var l = this.h;
+		while(l != null) {
+			if(first) first = false; else s.b += Std.string(sep);
+			s.b += Std.string(l[0]);
+			l = l[1];
+		}
+		return s.b;
+	}
+	,toString: function() {
+		var s = new StringBuf();
+		var first = true;
+		var l = this.h;
+		s.b += Std.string("{");
+		while(l != null) {
+			if(first) first = false; else s.b += Std.string(", ");
+			s.b += Std.string(Std.string(l[0]));
+			l = l[1];
+		}
+		s.b += Std.string("}");
+		return s.b;
+	}
+	,iterator: function() {
+		return { h : this.h, hasNext : function() {
+			return this.h != null;
+		}, next : function() {
+			if(this.h == null) return null;
+			var x = this.h[0];
+			this.h = this.h[1];
+			return x;
+		}};
+	}
+	,remove: function(v) {
+		var prev = null;
+		var l = this.h;
+		while(l != null) {
+			if(l[0] == v) {
+				if(prev == null) this.h = l[1]; else prev[1] = l[1];
+				if(this.q == l) this.q = prev;
+				this.length--;
+				return true;
+			}
+			prev = l;
+			l = l[1];
+		}
+		return false;
+	}
+	,clear: function() {
+		this.h = null;
+		this.q = null;
+		this.length = 0;
+	}
+	,isEmpty: function() {
+		return this.h == null;
+	}
+	,pop: function() {
+		if(this.h == null) return null;
+		var x = this.h[0];
+		this.h = this.h[1];
+		if(this.h == null) this.q = null;
+		this.length--;
+		return x;
+	}
+	,last: function() {
+		return this.q == null?null:this.q[0];
+	}
+	,first: function() {
+		return this.h == null?null:this.h[0];
+	}
+	,push: function(item) {
+		var x = [item,this.h];
+		this.h = x;
+		if(this.q == null) this.q = x;
+		this.length++;
+	}
+	,add: function(item) {
+		var x = [item];
+		if(this.h == null) this.h = x; else this.q[1] = x;
+		this.q = x;
+		this.length++;
+	}
+	,__class__: List
 }
 var Reflect = function() { }
 Reflect.__name__ = true;
@@ -302,6 +628,25 @@ Std.parseFloat = function(x) {
 }
 Std.random = function(x) {
 	return Math.floor(Math.random() * x);
+}
+var StringBuf = function() {
+	this.b = "";
+};
+StringBuf.__name__ = true;
+StringBuf.prototype = {
+	toString: function() {
+		return this.b;
+	}
+	,addSub: function(s,pos,len) {
+		this.b += HxOverrides.substr(s,pos,len);
+	}
+	,addChar: function(c) {
+		this.b += String.fromCharCode(c);
+	}
+	,add: function(x) {
+		this.b += Std.string(x);
+	}
+	,__class__: StringBuf
 }
 var StringTools = function() { }
 StringTools.__name__ = true;
@@ -539,6 +884,7 @@ js.Lib.eval = function(code) {
 js.Lib.setErrorHandler = function(f) {
 	js.Lib.onerror = f;
 }
+function $iterator(o) { if( o instanceof Array ) return function() { return HxOverrides.iter(o); }; return typeof(o.iterator) == 'function' ? $bind(o,o.iterator) : o.iterator; };
 var $_;
 function $bind(o,m) { var f = function(){ return f.method.apply(f.scope, arguments); }; f.scope = o; f.method = m; return f; };
 if(Array.prototype.indexOf) HxOverrides.remove = function(a,o) {

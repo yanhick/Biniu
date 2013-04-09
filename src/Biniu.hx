@@ -117,15 +117,23 @@ class Biniu
 	function parseBiniu(biniu:String)
 	{
 		var components:Array<String> = biniu.split(" ");
+		trace(components);
+		var ret:Array<String> = [];
 		for (i in 0...components.length)
 		{
 			components[i] = StringTools.trim(components[i]);
 			components[i]  = StringTools.replace(components[i], '\n', '');
 			components[i]  = StringTools.replace(components[i], '\r', '');
 			components[i]  = StringTools.replace(components[i], '\t', '');
+			
+			if (components[i] != "")
+			{
+				ret.push(components[i]);
+			}
+			
 		}
 		
-		return components;
+		return ret;
 	}
 	
 	/**
@@ -237,4 +245,6 @@ class Biniu
 		
 		return biniuCallbacks;
 	}
+	
+
 }
