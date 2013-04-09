@@ -16,7 +16,7 @@ class Biniu
 		Lib.window.onload = function(e)
 		{
 			var b = new Biniu();
-			b.run();
+			b.run(untyped Lib.document.documentElement);
 		}
 	}
 	
@@ -25,11 +25,11 @@ class Biniu
 		
 	}
 	
-	public function run(userCallbacks:Dynamic = null)
+	public function run(node:HtmlDom, userCallbacks:Dynamic = null)
 	{
 		var biniuCallbacks = getBiniuCallbacks(userCallbacks);
 		
-		var biniuNodes:Array<HtmlDom> = getBiniuNodes(untyped Lib.document.documentElement);
+		var biniuNodes:Array<HtmlDom> = getBiniuNodes(node);
 		
 		for (biniuNode in biniuNodes)
 		{
@@ -65,32 +65,57 @@ class Biniu
 		var biniuExpr = biniuNode.getAttribute(biniuAttr);
 		
 		var node:Dynamic = biniuNode;
-		node.addEventListener(eventType, function(e) { executeBiniu(biniuExpr, biniuNode, e, biniuCallbacks); } );
+		node.addEventListener(eventType, function(e) { executeBinius(biniuExpr, biniuNode, e, biniuCallbacks); } );
 	}
 	
-	function executeBiniu(biniuExpr, node, event, biniuCallbacks)
+	function executeBinius(binius, node, event, biniuCallbacks)
 	{
-		var commands:Array<String> = biniuExpr.split(",");
-		
-		for (command in commands)
+		for (biniu in binius.split(","))
 		{
-			var components = command.split(" ");
+			executeBiniu(parseBiniu(biniu), node, event, biniuCallbacks);
+		}
+	}
+	
+	function parseBiniu(biniu)
+	{
+		var components = biniu.split(" ");
+		for (component in components)
+		{
+			component = StringTools.trim(component);
+		}
+		
+		return components;
+	}
+	
+	function executeBiniu(components:Array<String>, node, event, biniuCallbacks)
+	{
 			if (!Reflect.hasField(biniuCallbacks, components[0]))
 				throw "first value must be a registered method";
 			
 			var func = Reflect.field(biniuCallbacks, components[0]);
-			var resolvedArgs = [];	
-			for (i in 0...components.length)
+			var resolvedArgs = [node, event];	
+			var i = 0;
+			while (i < components.length)
 			{
 				if (i != 0)
 				{
-					resolvedArgs.push(resolveArgument(components[i], node, event, biniuCallbacks));
+					if (components[i] == "_")
+					{
+						resolvedArgs.push(executeBiniu(components, node, event, biniuCallbacks);
+						break;
+					}
+					else
+					{
+						resolvedArgs.push(resolveArgument(components[i], node, event, biniuCallbacks));
+					}
+					
+					
 				}
+				
+				i++;
 			}
-			trace(resolvedArgs);
-			trace(components);
-			Reflect.callMethod(biniuCallbacks, func, resolvedArgs);
-		}
+			
+			return Reflect.callMethod(biniuCallbacks, func, resolvedArgs);
 	}
 	
 	function resolveArgument(argument, node, event, biniuCallbacks):Dynamic
@@ -113,6 +138,10 @@ class Biniu
 		return components[components.length - 1];
 	}
 	
+	/**
+	 * Return all the names of attributes with biniu prefix 
+	 * on the current node
+	 */
 	function getBiniuAttributes(biniuNode:Dynamic):Array<String>
 	{
 		if (biniuNode.attributes == null)
@@ -130,9 +159,12 @@ class Biniu
 		return attributes;
 	}
 	
+	/**
+	 * concatenate standard callbacks with user callbacks
+	 */
 	function getBiniuCallbacks(userCallbacks:Dynamic)
 	{
-		var biniuCallbacks = {'add':add };
+		var biniuCallbacks = {'add':add, 'set':set };
 		
 		if (userCallbacks == null)
 			return biniuCallbacks;
@@ -146,9 +178,14 @@ class Biniu
 		return biniuCallbacks;
 	}
 	
-	function add(a, b)
+	function add(node:HtmlDom, event, a, b)
 	{
 		var c:Int = Std.parseInt(a) + Std.parseInt(b);
 		trace(c);
+	}
+	
+	function set(node:HtmlDom, event, attr, value)
+	{
+		node.setAttribute(attr, value);
 	}
 }

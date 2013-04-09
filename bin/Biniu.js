@@ -8,14 +8,15 @@ Biniu.main = function() {
 	};
 }
 Biniu.prototype = {
-	add: function(a,b) {
-		console.log(a);
-		console.log(b);
+	set: function(node,event,attr,value) {
+		node.setAttribute(attr,value);
+	}
+	,add: function(node,event,a,b) {
 		var c = Std.parseInt(a) + Std.parseInt(b);
 		console.log(c);
 	}
 	,getBiniuCallbacks: function(userCallbacks) {
-		var biniuCallbacks = { add : $bind(this,this.add)};
+		var biniuCallbacks = { add : $bind(this,this.add), set : $bind(this,this.set)};
 		if(userCallbacks == null) return biniuCallbacks;
 		var _g = 0, _g1 = Reflect.fields(userCallbacks);
 		while(_g < _g1.length) {
@@ -54,7 +55,7 @@ Biniu.prototype = {
 			var components = command.split(" ");
 			if(!Reflect.hasField(biniuCallbacks,components[0])) throw "first value must be a registered method";
 			var func = Reflect.field(biniuCallbacks,components[0]);
-			var resolvedArgs = [];
+			var resolvedArgs = [node,event];
 			var _g2 = 0, _g1 = components.length;
 			while(_g2 < _g1) {
 				var i = _g2++;
