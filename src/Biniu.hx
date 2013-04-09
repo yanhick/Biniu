@@ -96,17 +96,17 @@ class Biniu
 				event:e
 			}
 			
-			executeBinius(biniuExpr, biniuNode, e, biniuCallbacks); });
+			executeBinius(biniuExpr, context, biniuCallbacks); });
 	}
 	
 	/**
 	 * execute all the comma separated command
 	 */
-	function executeBinius(binius:String, node, event, biniuCallbacks)
+	function executeBinius(binius:String, context, biniuCallbacks)
 	{
 		for (biniu in binius.split(","))
 		{
-			executeBiniu(parseBiniu(biniu), node, event, biniuCallbacks);
+			executeBiniu(parseBiniu(biniu), context, biniuCallbacks);
 		}
 	}
 	
@@ -153,13 +153,13 @@ class Biniu
 				//special triggering method call using all the rest of the arguments
 				if (components[i] == BINIU_CALL)
 				{
-					resolvedArgs.push(executeBiniu(components.slice(i + 1, components.length), node, event, biniuCallbacks));
+					resolvedArgs.push(executeBiniu(components.slice(i + 1, components.length), context, biniuCallbacks));
 					break;
 				}
 				//resolve every argument
 				else
 				{
-					resolvedArgs.push(resolveArgument(components[i], node, event, biniuCallbacks));
+					resolvedArgs.push(resolveArgument(components[i], context, biniuCallbacks));
 				}
 			}
 		}
@@ -175,16 +175,16 @@ class Biniu
 		 * then if it is an attribute of the node return the value of the attribute
 		 * then return the argument as is
 	 */
-	function resolveArgument(argument, node, event, biniuCallbacks):Dynamic
+	function resolveArgument(argument, context, biniuCallbacks):Dynamic
 	{
 		if (Reflect.hasField(biniuCallbacks, argument))
 			return Reflect.field(biniuCallbacks, argument);
 			
-		if (Reflect.hasField(event, argument))
-			return Reflect.field(event, argument);
+		if (Reflect.hasField(context.event, argument))
+			return Reflect.field(context.event, argument);
 			
-		if (node.getAttribute(argument) != null)
-			return node.getAttribute(argument);
+		if (context.node.getAttribute(argument) != null)
+			return context.node.getAttribute(argument);
 			
 		return argument;	
 	}
@@ -224,7 +224,7 @@ class Biniu
 	 */
 	function getBiniuCallbacks(userCallbacks:Dynamic)
 	{
-		var biniuCallbacks = {'add':add, 'sub':sub, 'log':log, 'set':set };
+		var biniuCallbacks = new Biniulib().map;
 		
 		if (userCallbacks == null)
 			return biniuCallbacks;
@@ -236,27 +236,5 @@ class Biniu
 		}
 		
 		return biniuCallbacks;
-	}
-	
-	function add(node:HtmlDom, event, a, b)
-	{
-		var c:Int = Std.parseInt(a) + Std.parseInt(b);
-		return c;
-	}
-	
-	function sub(node:HtmlDom, event, a, b)
-	{
-		var c:Int = Std.parseInt(a) - Std.parseInt(b);
-		return c;
-	}
-	
-	function log(node:HtmlDom, event, a)
-	{
-		trace(a);
-	}
-	
-	function set(node:HtmlDom, event, attr, value)
-	{
-		node.setAttribute(attr, value);
 	}
 }

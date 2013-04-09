@@ -8,22 +8,8 @@ Biniu.main = function() {
 	};
 }
 Biniu.prototype = {
-	set: function(node,event,attr,value) {
-		node.setAttribute(attr,value);
-	}
-	,log: function(node,event,a) {
-		console.log(a);
-	}
-	,sub: function(node,event,a,b) {
-		var c = Std.parseInt(a) - Std.parseInt(b);
-		return c;
-	}
-	,add: function(node,event,a,b) {
-		var c = Std.parseInt(a) + Std.parseInt(b);
-		return c;
-	}
-	,getBiniuCallbacks: function(userCallbacks) {
-		var biniuCallbacks = { add : $bind(this,this.add), sub : $bind(this,this.sub), log : $bind(this,this.log), set : $bind(this,this.set)};
+	getBiniuCallbacks: function(userCallbacks) {
+		var biniuCallbacks = new Biniulib().map;
 		if(userCallbacks == null) return biniuCallbacks;
 		var _g = 0, _g1 = Reflect.fields(userCallbacks);
 		while(_g < _g1.length) {
@@ -47,29 +33,25 @@ Biniu.prototype = {
 		var components = biniuAttr.split("-");
 		return components[components.length - 1];
 	}
-	,resolveArgument: function(argument,node,event,biniuCallbacks) {
+	,resolveArgument: function(argument,context,biniuCallbacks) {
 		if(Reflect.hasField(biniuCallbacks,argument)) return Reflect.field(biniuCallbacks,argument);
-		if(Reflect.hasField(event,argument)) return Reflect.field(event,argument);
-		if(node.getAttribute(argument) != null) return node.getAttribute(argument);
+		if(Reflect.hasField(context.event,argument)) return Reflect.field(context.event,argument);
+		if(context.node.getAttribute(argument) != null) return context.node.getAttribute(argument);
 		return argument;
 	}
-	,executeBiniu: function(components,node,event,biniuCallbacks) {
-		console.log(components);
-		if(!Reflect.hasField(biniuCallbacks,components[0])) {
-			console.log(components);
-			throw "first value must be a registered method";
-		}
+	,executeBiniu: function(components,context,biniuCallbacks) {
+		if(!Reflect.hasField(biniuCallbacks,components[0])) throw "first value must be a registered method";
 		var func = Reflect.field(biniuCallbacks,components[0]);
-		var resolvedArgs = [node,event];
-		var i = 0;
-		while(i < components.length) {
+		var resolvedArgs = [context];
+		var _g1 = 0, _g = components.length;
+		while(_g1 < _g) {
+			var i = _g1++;
 			if(i != 0) {
-				if(components[i] == "_") {
-					resolvedArgs.push(this.executeBiniu(components.slice(i + 1,components.length),node,event,biniuCallbacks));
+				if(components[i] == Biniu.BINIU_CALL) {
+					resolvedArgs.push(this.executeBiniu(components.slice(i + 1,components.length),context,biniuCallbacks));
 					break;
-				} else resolvedArgs.push(this.resolveArgument(components[i],node,event,biniuCallbacks));
+				} else resolvedArgs.push(this.resolveArgument(components[i],context,biniuCallbacks));
 			}
-			i++;
 		}
 		return func.apply(biniuCallbacks,resolvedArgs);
 	}
@@ -85,12 +67,12 @@ Biniu.prototype = {
 		}
 		return components;
 	}
-	,executeBinius: function(binius,node,event,biniuCallbacks) {
+	,executeBinius: function(binius,context,biniuCallbacks) {
 		var _g = 0, _g1 = binius.split(",");
 		while(_g < _g1.length) {
 			var biniu = _g1[_g];
 			++_g;
-			this.executeBiniu(this.parseBiniu(biniu),node,event,biniuCallbacks);
+			this.executeBiniu(this.parseBiniu(biniu),context,biniuCallbacks);
 		}
 	}
 	,registerBiniu: function(biniuNode,biniuAttr,biniuCallbacks) {
@@ -99,7 +81,8 @@ Biniu.prototype = {
 		var biniuExpr = biniuNode.getAttribute(biniuAttr);
 		var node = biniuNode;
 		node.addEventListener(eventType,function(e) {
-			_g.executeBinius(biniuExpr,biniuNode,e,biniuCallbacks);
+			var context = { node : node, event : e};
+			_g.executeBinius(biniuExpr,context,biniuCallbacks);
 		});
 	}
 	,getBiniuNodes: function(node) {
@@ -133,6 +116,16 @@ Biniu.prototype = {
 		}
 	}
 	,__class__: Biniu
+}
+var Biniulib = function() {
+	this.map = { log : $bind(this,this.log)};
+};
+Biniulib.__name__ = true;
+Biniulib.prototype = {
+	log: function(context,msg) {
+		console.log(msg);
+	}
+	,__class__: Biniulib
 }
 var HxOverrides = function() { }
 HxOverrides.__name__ = true;
@@ -588,4 +581,6 @@ if(typeof window != "undefined") {
 		return f(msg,[url + ":" + line]);
 	};
 }
+Biniu.BINIU_PREFIX = "data-biniu";
+Biniu.BINIU_CALL = "_";
 Biniu.main();
