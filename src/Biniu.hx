@@ -28,9 +28,14 @@ class Biniu
 	static var BINIU_PREFIX:String = "data-biniu";
 	
 	/**
-	 * special char used to invoke a method call
+	 * start of a list
 	 */
-	static var BINIU_CALL:String = "_";
+	static var BINIU_OPEN:String = "(";
+	
+	/**
+	 * end of a list
+	 */
+	static var BINIU_CLOSE:String = ")";
 	
 	public function new() 
 	{
@@ -141,6 +146,7 @@ class Biniu
 	 */
 	function executeBiniu(components:Array<String>, context:Dynamic, biniuCallbacks:Dynamic)
 	{
+		
 		//always start with a method
 		if (!Reflect.hasField(biniuCallbacks, components[0]))
 		{
@@ -148,26 +154,37 @@ class Biniu
 		}
 		
 		//method to call
-		var func = Reflect.field(biniuCallbacks, components[0]);
+		var func = Reflect.field(biniuCallbacks, components.shift());
 		
 		var resolvedArgs = [];
 
-		for (i in 0...components.length)
+		while (components.length > 0)
 		{
-			//reserved for method call
-			if (i != 0)
+			var component = components.shift();
+			
+			//special triggering method call using all the rest of the arguments
+			if (component == BINIU_OPEN)
 			{
-				//special triggering method call using all the rest of the arguments
-				if (components[i] == BINIU_CALL)
+				var local = [];
+				
+				while (components.length > 0)
 				{
-					resolvedArgs.push(executeBiniu(components.slice(i + 1, components.length), context, biniuCallbacks));
-					break;
+					var component = components.shift();
+					
+					if (component == BINIU_CLOSE)
+					{
+						break;
+					}
+					
+					local.push(component);
 				}
-				//resolve every argument
-				else
-				{
-					resolvedArgs.push(resolveArgument(components[i], context, biniuCallbacks));
-				}
+				
+				resolvedArgs.push(executeBiniu(local, context, biniuCallbacks));
+			}
+			//resolve every argument
+			else if (component != BINIU_CLOSE)
+			{
+				resolvedArgs.push(resolveArgument(component, context, biniuCallbacks));
 			}
 		}
 		

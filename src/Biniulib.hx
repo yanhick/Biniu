@@ -38,7 +38,9 @@ class Biniulib
 			'remove-style':removeStyle,
 			'toggle-style':toggleStyle,
 			'concat':concat,
-			'send':dispatch
+			'send':dispatch,
+			'index':index,
+			'arr':arr
 		}
 	}
 	
@@ -117,6 +119,23 @@ class Biniulib
 		}
 		
 		return concat;
+	}
+	
+	//////////////////
+	// Collection
+	/////////////////
+	
+	
+	function arr(context, args:Array<Dynamic>)
+	{
+		return args;
+	}
+	
+	function index(context, args:Array<Dynamic>)
+	{
+		var index = args[0];
+		var collection = args[1];
+		return collection[index];
 	}
 	
 	//////////////////

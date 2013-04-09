@@ -44,17 +44,19 @@ Biniu.prototype = {
 	}
 	,executeBiniu: function(components,context,biniuCallbacks) {
 		if(!Reflect.hasField(biniuCallbacks,components[0])) throw "first value must be a registered method";
-		var func = Reflect.field(biniuCallbacks,components[0]);
+		var func = Reflect.field(biniuCallbacks,components.shift());
 		var resolvedArgs = [];
-		var _g1 = 0, _g = components.length;
-		while(_g1 < _g) {
-			var i = _g1++;
-			if(i != 0) {
-				if(components[i] == Biniu.BINIU_CALL) {
-					resolvedArgs.push(this.executeBiniu(components.slice(i + 1,components.length),context,biniuCallbacks));
-					break;
-				} else resolvedArgs.push(this.resolveArgument(components[i],context,biniuCallbacks));
-			}
+		while(components.length > 0) {
+			var component = components.shift();
+			if(component == Biniu.BINIU_OPEN) {
+				var local = [];
+				while(components.length > 0) {
+					var component1 = components.shift();
+					if(component1 == Biniu.BINIU_CLOSE) break;
+					local.push(component1);
+				}
+				resolvedArgs.push(this.executeBiniu(local,context,biniuCallbacks));
+			} else if(component != Biniu.BINIU_CLOSE) resolvedArgs.push(this.resolveArgument(component,context,biniuCallbacks));
 		}
 		return func.apply(biniuCallbacks,[context,resolvedArgs]);
 	}
@@ -123,7 +125,7 @@ Biniu.prototype = {
 	,__class__: Biniu
 }
 var Biniulib = function() {
-	this.map = { log : $bind(this,this.log), '+' : $bind(this,this.add), '-' : $bind(this,this.sub), '*' : $bind(this,this.mul), '/' : $bind(this,this.div), 'set-attr' : $bind(this,this.setAttribute), 'get-attr' : $bind(this,this.getAttribute), 'set-class' : $bind(this,this.addClass), 'remove-class' : $bind(this,this.removeClass), 'toggle-class' : $bind(this,this.toggleClass), 'set-style' : $bind(this,this.setStyle), 'remove-style' : $bind(this,this.removeStyle), 'toggle-style' : $bind(this,this.toggleStyle), concat : $bind(this,this.concat), send : $bind(this,this.dispatch)};
+	this.map = { log : $bind(this,this.log), '+' : $bind(this,this.add), '-' : $bind(this,this.sub), '*' : $bind(this,this.mul), '/' : $bind(this,this.div), 'set-attr' : $bind(this,this.setAttribute), 'get-attr' : $bind(this,this.getAttribute), 'set-class' : $bind(this,this.addClass), 'remove-class' : $bind(this,this.removeClass), 'toggle-class' : $bind(this,this.toggleClass), 'set-style' : $bind(this,this.setStyle), 'remove-style' : $bind(this,this.removeStyle), 'toggle-style' : $bind(this,this.toggleStyle), concat : $bind(this,this.concat), send : $bind(this,this.dispatch), index : $bind(this,this.index), arr : $bind(this,this.arr)};
 };
 Biniulib.__name__ = true;
 Biniulib.prototype = {
@@ -222,6 +224,14 @@ Biniulib.prototype = {
 		var customEvent = js.Lib.document.createEvent("CustomEvent");
 		customEvent.initCustomEvent(eventType,true,true,detail);
 		context.node.dispatchEvent(customEvent);
+	}
+	,index: function(context,args) {
+		var index = args[0];
+		var collection = args[1];
+		return collection[index];
+	}
+	,arr: function(context,args) {
+		return args;
 	}
 	,concat: function(context,args) {
 		var concat = "";
@@ -1002,5 +1012,6 @@ if(typeof window != "undefined") {
 	};
 }
 Biniu.BINIU_PREFIX = "data-biniu";
-Biniu.BINIU_CALL = "_";
+Biniu.BINIU_OPEN = "(";
+Biniu.BINIU_CLOSE = ")";
 Biniu.main();
