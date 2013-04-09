@@ -1,6 +1,7 @@
 package ;
 
 import js.Dom;
+import js.Lib;
 
 using StringTools;
 
@@ -35,7 +36,9 @@ class Biniulib
 			'toggle-class':toggleClass,
 			'set-style':setStyle,
 			'remove-style':removeStyle,
-			'toggle-style':toggleStyle
+			'toggle-style':toggleStyle,
+			'concat':concat,
+			'send':dispatch
 		}
 	}
 	
@@ -120,6 +123,21 @@ class Biniulib
 	// event
 	/////////////////
 	
+	function dispatch(context, args:Array<Dynamic>)
+	{
+		var eventType = args[0];
+		args.shift();
+		var detail:Dynamic = { };
+		
+		while (args.length > 0)
+		{
+			Reflect.setField(detail, args.shift(), args.shift());
+		}
+		
+		var customEvent:Dynamic = untyped Lib.document.createEvent("CustomEvent");
+		customEvent.initCustomEvent(eventType, true, true, detail);
+		context.node.dispatchEvent(customEvent);
+	}
 	
 	
 	//////////////////

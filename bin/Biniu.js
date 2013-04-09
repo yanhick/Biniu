@@ -123,7 +123,7 @@ Biniu.prototype = {
 	,__class__: Biniu
 }
 var Biniulib = function() {
-	this.map = { log : $bind(this,this.log), '+' : $bind(this,this.add), '-' : $bind(this,this.sub), '*' : $bind(this,this.mul), '/' : $bind(this,this.div), 'set-attr' : $bind(this,this.setAttribute), 'get-attr' : $bind(this,this.getAttribute), 'set-class' : $bind(this,this.addClass), 'remove-class' : $bind(this,this.removeClass), 'toggle-class' : $bind(this,this.toggleClass), 'set-style' : $bind(this,this.setStyle), 'remove-style' : $bind(this,this.removeStyle), 'toggle-style' : $bind(this,this.toggleStyle)};
+	this.map = { log : $bind(this,this.log), '+' : $bind(this,this.add), '-' : $bind(this,this.sub), '*' : $bind(this,this.mul), '/' : $bind(this,this.div), 'set-attr' : $bind(this,this.setAttribute), 'get-attr' : $bind(this,this.getAttribute), 'set-class' : $bind(this,this.addClass), 'remove-class' : $bind(this,this.removeClass), 'toggle-class' : $bind(this,this.toggleClass), 'set-style' : $bind(this,this.setStyle), 'remove-style' : $bind(this,this.removeStyle), 'toggle-style' : $bind(this,this.toggleStyle), concat : $bind(this,this.concat), send : $bind(this,this.dispatch)};
 };
 Biniulib.__name__ = true;
 Biniulib.prototype = {
@@ -213,6 +213,15 @@ Biniulib.prototype = {
 	}
 	,setAttribute: function(context,args) {
 		context.node.setAttribute(args[0],args[1]);
+	}
+	,dispatch: function(context,args) {
+		var eventType = args[0];
+		args.shift();
+		var detail = { };
+		while(args.length > 0) detail[args.shift()] = args.shift();
+		var customEvent = js.Lib.document.createEvent("CustomEvent");
+		customEvent.initCustomEvent(eventType,true,true,detail);
+		context.node.dispatchEvent(customEvent);
 	}
 	,concat: function(context,args) {
 		var concat = "";
