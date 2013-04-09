@@ -4,19 +4,26 @@ Biniu.__name__ = true;
 Biniu.main = function() {
 	js.Lib.window.onload = function(e) {
 		var b = new Biniu();
-		b.run();
+		b.run(js.Lib.document.documentElement);
 	};
 }
 Biniu.prototype = {
 	set: function(node,event,attr,value) {
 		node.setAttribute(attr,value);
 	}
+	,log: function(node,event,a) {
+		console.log(a);
+	}
+	,sub: function(node,event,a,b) {
+		var c = Std.parseInt(a) - Std.parseInt(b);
+		return c;
+	}
 	,add: function(node,event,a,b) {
 		var c = Std.parseInt(a) + Std.parseInt(b);
-		console.log(c);
+		return c;
 	}
 	,getBiniuCallbacks: function(userCallbacks) {
-		var biniuCallbacks = { add : $bind(this,this.add), set : $bind(this,this.set)};
+		var biniuCallbacks = { add : $bind(this,this.add), sub : $bind(this,this.sub), log : $bind(this,this.log), set : $bind(this,this.set)};
 		if(userCallbacks == null) return biniuCallbacks;
 		var _g = 0, _g1 = Reflect.fields(userCallbacks);
 		while(_g < _g1.length) {
@@ -46,24 +53,44 @@ Biniu.prototype = {
 		if(node.getAttribute(argument) != null) return node.getAttribute(argument);
 		return argument;
 	}
-	,executeBiniu: function(biniuExpr,node,event,biniuCallbacks) {
-		var commands = biniuExpr.split(",");
-		var _g = 0;
-		while(_g < commands.length) {
-			var command = commands[_g];
-			++_g;
-			var components = command.split(" ");
-			if(!Reflect.hasField(biniuCallbacks,components[0])) throw "first value must be a registered method";
-			var func = Reflect.field(biniuCallbacks,components[0]);
-			var resolvedArgs = [node,event];
-			var _g2 = 0, _g1 = components.length;
-			while(_g2 < _g1) {
-				var i = _g2++;
-				if(i != 0) resolvedArgs.push(this.resolveArgument(components[i],node,event,biniuCallbacks));
-			}
-			console.log(resolvedArgs);
+	,executeBiniu: function(components,node,event,biniuCallbacks) {
+		console.log(components);
+		if(!Reflect.hasField(biniuCallbacks,components[0])) {
 			console.log(components);
-			func.apply(biniuCallbacks,resolvedArgs);
+			throw "first value must be a registered method";
+		}
+		var func = Reflect.field(biniuCallbacks,components[0]);
+		var resolvedArgs = [node,event];
+		var i = 0;
+		while(i < components.length) {
+			if(i != 0) {
+				if(components[i] == "_") {
+					resolvedArgs.push(this.executeBiniu(components.slice(i + 1,components.length),node,event,biniuCallbacks));
+					break;
+				} else resolvedArgs.push(this.resolveArgument(components[i],node,event,biniuCallbacks));
+			}
+			i++;
+		}
+		return func.apply(biniuCallbacks,resolvedArgs);
+	}
+	,parseBiniu: function(biniu) {
+		var components = biniu.split(" ");
+		var _g1 = 0, _g = components.length;
+		while(_g1 < _g) {
+			var i = _g1++;
+			components[i] = StringTools.trim(components[i]);
+			components[i] = StringTools.replace(components[i],"\n","");
+			components[i] = StringTools.replace(components[i],"\r","");
+			components[i] = StringTools.replace(components[i],"\t","");
+		}
+		return components;
+	}
+	,executeBinius: function(binius,node,event,biniuCallbacks) {
+		var _g = 0, _g1 = binius.split(",");
+		while(_g < _g1.length) {
+			var biniu = _g1[_g];
+			++_g;
+			this.executeBiniu(this.parseBiniu(biniu),node,event,biniuCallbacks);
 		}
 	}
 	,registerBiniu: function(biniuNode,biniuAttr,biniuCallbacks) {
@@ -72,7 +99,7 @@ Biniu.prototype = {
 		var biniuExpr = biniuNode.getAttribute(biniuAttr);
 		var node = biniuNode;
 		node.addEventListener(eventType,function(e) {
-			_g.executeBiniu(biniuExpr,biniuNode,e,biniuCallbacks);
+			_g.executeBinius(biniuExpr,biniuNode,e,biniuCallbacks);
 		});
 	}
 	,getBiniuNodes: function(node) {
@@ -90,9 +117,9 @@ Biniu.prototype = {
 		}
 		return biniuNodes;
 	}
-	,run: function(userCallbacks) {
+	,run: function(node,userCallbacks) {
 		var biniuCallbacks = this.getBiniuCallbacks(userCallbacks);
-		var biniuNodes = this.getBiniuNodes(js.Lib.document.documentElement);
+		var biniuNodes = this.getBiniuNodes(node);
 		var _g = 0;
 		while(_g < biniuNodes.length) {
 			var biniuNode = biniuNodes[_g];
@@ -282,6 +309,92 @@ Std.parseFloat = function(x) {
 }
 Std.random = function(x) {
 	return Math.floor(Math.random() * x);
+}
+var StringTools = function() { }
+StringTools.__name__ = true;
+StringTools.urlEncode = function(s) {
+	return encodeURIComponent(s);
+}
+StringTools.urlDecode = function(s) {
+	return decodeURIComponent(s.split("+").join(" "));
+}
+StringTools.htmlEscape = function(s) {
+	return s.split("&").join("&amp;").split("<").join("&lt;").split(">").join("&gt;");
+}
+StringTools.htmlUnescape = function(s) {
+	return s.split("&gt;").join(">").split("&lt;").join("<").split("&amp;").join("&");
+}
+StringTools.startsWith = function(s,start) {
+	return s.length >= start.length && HxOverrides.substr(s,0,start.length) == start;
+}
+StringTools.endsWith = function(s,end) {
+	var elen = end.length;
+	var slen = s.length;
+	return slen >= elen && HxOverrides.substr(s,slen - elen,elen) == end;
+}
+StringTools.isSpace = function(s,pos) {
+	var c = HxOverrides.cca(s,pos);
+	return c >= 9 && c <= 13 || c == 32;
+}
+StringTools.ltrim = function(s) {
+	var l = s.length;
+	var r = 0;
+	while(r < l && StringTools.isSpace(s,r)) r++;
+	if(r > 0) return HxOverrides.substr(s,r,l - r); else return s;
+}
+StringTools.rtrim = function(s) {
+	var l = s.length;
+	var r = 0;
+	while(r < l && StringTools.isSpace(s,l - r - 1)) r++;
+	if(r > 0) return HxOverrides.substr(s,0,l - r); else return s;
+}
+StringTools.trim = function(s) {
+	return StringTools.ltrim(StringTools.rtrim(s));
+}
+StringTools.rpad = function(s,c,l) {
+	var sl = s.length;
+	var cl = c.length;
+	while(sl < l) if(l - sl < cl) {
+		s += HxOverrides.substr(c,0,l - sl);
+		sl = l;
+	} else {
+		s += c;
+		sl += cl;
+	}
+	return s;
+}
+StringTools.lpad = function(s,c,l) {
+	var ns = "";
+	var sl = s.length;
+	if(sl >= l) return s;
+	var cl = c.length;
+	while(sl < l) if(l - sl < cl) {
+		ns += HxOverrides.substr(c,0,l - sl);
+		sl = l;
+	} else {
+		ns += c;
+		sl += cl;
+	}
+	return ns + s;
+}
+StringTools.replace = function(s,sub,by) {
+	return s.split(sub).join(by);
+}
+StringTools.hex = function(n,digits) {
+	var s = "";
+	var hexChars = "0123456789ABCDEF";
+	do {
+		s = hexChars.charAt(n & 15) + s;
+		n >>>= 4;
+	} while(n > 0);
+	if(digits != null) while(s.length < digits) s = "0" + s;
+	return s;
+}
+StringTools.fastCodeAt = function(s,index) {
+	return s.charCodeAt(index);
+}
+StringTools.isEOF = function(c) {
+	return c != c;
 }
 var js = js || {}
 js.Boot = function() { }

@@ -4,10 +4,11 @@ import js.Dom;
 import js.Lib;
 
 /**
- * ...
+ * A simple interpreter for expressions meant to be binded to 
+ * dom events
+ * 
  * @author Yannick DOMINGUEZ
  */
-
 class Biniu 
 {
 
@@ -20,11 +21,26 @@ class Biniu
 		}
 	}
 	
+	/**
+	 * prefix for biniu attribute, must be appended with an
+	 * event name
+	 */
+	static var BINIU_PREFIX:String = "data-biniu";
+	
+	/**
+	 * special char used to invoke a method call
+	 */
+	static var BINIU_CALL:String = "_";
+	
 	public function new() 
 	{
 		
 	}
 	
+	/**
+	 * register all event callbacks for dom node 
+	 * with biniu attributes
+	 */
 	public function run(node:HtmlDom, userCallbacks:Dynamic = null)
 	{
 		var biniuCallbacks = getBiniuCallbacks(userCallbacks);
@@ -40,6 +56,9 @@ class Biniu
 		}
 	}
 	
+	/**
+	 * get all the dom node with a biniu attribute
+	 */
 	function getBiniuNodes(node:HtmlDom):Array<HtmlDom>
 	{
 		var biniuNodes = [];
@@ -59,16 +78,31 @@ class Biniu
 		return biniuNodes;
 	}
 	
+	/**
+	 * register a callback for the event type specified by the biniu attribute
+	 */
 	function registerBiniu(biniuNode:HtmlDom, biniuAttr:String, biniuCallbacks:Dynamic)
 	{
 		var eventType = getBiniuEventType(biniuAttr);
 		var biniuExpr = biniuNode.getAttribute(biniuAttr);
 		
 		var node:Dynamic = biniuNode;
-		node.addEventListener(eventType, function(e) { executeBinius(biniuExpr, biniuNode, e, biniuCallbacks); } );
+		
+		node.addEventListener(eventType, function(e) { 
+			
+			//context pasd to all callbacks when executed
+			var context = {
+				node:node,
+				event:e
+			}
+			
+			executeBinius(biniuExpr, biniuNode, e, biniuCallbacks); });
 	}
 	
-	function executeBinius(binius, node, event, biniuCallbacks)
+	/**
+	 * execute all the comma separated command
+	 */
+	function executeBinius(binius:String, node, event, biniuCallbacks)
 	{
 		for (biniu in binius.split(","))
 		{
@@ -76,48 +110,71 @@ class Biniu
 		}
 	}
 	
-	function parseBiniu(biniu)
+	/**
+	 * parse and sanitize biniu expr, return
+	 * array of space separated tokens
+	 */
+	function parseBiniu(biniu:String)
 	{
-		var components = biniu.split(" ");
-		for (component in components)
+		var components:Array<String> = biniu.split(" ");
+		for (i in 0...components.length)
 		{
-			component = StringTools.trim(component);
+			components[i] = StringTools.trim(components[i]);
+			components[i]  = StringTools.replace(components[i], '\n', '');
+			components[i]  = StringTools.replace(components[i], '\r', '');
+			components[i]  = StringTools.replace(components[i], '\t', '');
 		}
 		
 		return components;
 	}
 	
-	function executeBiniu(components:Array<String>, node, event, biniuCallbacks)
+	/**
+	 * execute one biniu expression
+	 */
+	function executeBiniu(components:Array<String>, context:Dynamic, biniuCallbacks:Dynamic)
 	{
-			if (!Reflect.hasField(biniuCallbacks, components[0]))
-				throw "first value must be a registered method";
-			
-			var func = Reflect.field(biniuCallbacks, components[0]);
-			var resolvedArgs = [node, event];	
-			var i = 0;
-			while (i < components.length)
+		//always start with a method
+		if (!Reflect.hasField(biniuCallbacks, components[0]))
+		{
+			throw "first value must be a registered method";
+		}
+		
+		//method to call
+		var func = Reflect.field(biniuCallbacks, components[0]);
+		
+		//first arg is always the context
+		var resolvedArgs = [context];
+
+		for (i in 0...components.length)
+		{
+			//reserved for method call
+			if (i != 0)
 			{
-				if (i != 0)
+				//special triggering method call using all the rest of the arguments
+				if (components[i] == BINIU_CALL)
 				{
-					if (components[i] == "_")
-					{
-						resolvedArgs.push(executeBiniu(components, node, event, biniuCallbacks);
-						break;
-					}
-					else
-					{
-						resolvedArgs.push(resolveArgument(components[i], node, event, biniuCallbacks));
-					}
-					
-					
+					resolvedArgs.push(executeBiniu(components.slice(i + 1, components.length), node, event, biniuCallbacks));
+					break;
 				}
-				
-				i++;
+				//resolve every argument
+				else
+				{
+					resolvedArgs.push(resolveArgument(components[i], node, event, biniuCallbacks));
+				}
 			}
-			
-			return Reflect.callMethod(biniuCallbacks, func, resolvedArgs);
+		}
+		
+		//call with resolved arg
+		return Reflect.callMethod(biniuCallbacks, func, resolvedArgs);
 	}
 	
+	/**
+	 * Resolve the actual value of an argument using the following rules :
+		 * first if arg is a registered func, return the func
+		 * then if it is a field of the event return the value of the field
+		 * then if it is an attribute of the node return the value of the attribute
+		 * then return the argument as is
+	 */
 	function resolveArgument(argument, node, event, biniuCallbacks):Dynamic
 	{
 		if (Reflect.hasField(biniuCallbacks, argument))
@@ -132,6 +189,9 @@ class Biniu
 		return argument;	
 	}
 	
+	/**
+	 * return the event targeted by the biniu
+	 */
 	function getBiniuEventType(biniuAttr):String
 	{
 		var components:Array<String> = biniuAttr.split("-");
@@ -164,7 +224,7 @@ class Biniu
 	 */
 	function getBiniuCallbacks(userCallbacks:Dynamic)
 	{
-		var biniuCallbacks = {'add':add, 'set':set };
+		var biniuCallbacks = {'add':add, 'sub':sub, 'log':log, 'set':set };
 		
 		if (userCallbacks == null)
 			return biniuCallbacks;
@@ -181,7 +241,18 @@ class Biniu
 	function add(node:HtmlDom, event, a, b)
 	{
 		var c:Int = Std.parseInt(a) + Std.parseInt(b);
-		trace(c);
+		return c;
+	}
+	
+	function sub(node:HtmlDom, event, a, b)
+	{
+		var c:Int = Std.parseInt(a) - Std.parseInt(b);
+		return c;
+	}
+	
+	function log(node:HtmlDom, event, a)
+	{
+		trace(a);
 	}
 	
 	function set(node:HtmlDom, event, attr, value)
