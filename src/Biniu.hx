@@ -117,7 +117,7 @@ class Biniu
 	function parseBiniu(biniu:String)
 	{
 		var components:Array<String> = biniu.split(" ");
-		trace(components);
+		
 		var ret:Array<String> = [];
 		for (i in 0...components.length)
 		{
@@ -190,6 +190,13 @@ class Biniu
 			
 		if (Reflect.hasField(context.event, argument))
 			return Reflect.field(context.event, argument);
+		
+		//special case for custom event
+		if (context.event.detail != null)
+		{
+			if (Reflect.hasField(context.event.detail, argument))
+				return Reflect.field(context.event.detail, argument);
+		}
 			
 		if (context.node.getAttribute(argument) != null)
 			return context.node.getAttribute(argument);

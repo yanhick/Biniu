@@ -30,9 +30,12 @@ class Biniulib
 			'/':div,
 			'set-attr':setAttribute,
 			'get-attr':getAttribute,
-			'add-class':addClass,
+			'set-class':addClass,
 			'remove-class':removeClass,
-			'toggle-class':toggleClass
+			'toggle-class':toggleClass,
+			'set-style':setStyle,
+			'remove-style':removeStyle,
+			'toggle-style':toggleStyle
 		}
 	}
 	
@@ -77,6 +80,33 @@ class Biniulib
 	function getAttribute(context, attr)
 	{
 		return context.node.getAttribute(attr);
+	}
+	
+	//////////////////
+	// INLINE STYLE
+	/////////////////
+	
+	function setStyle(context, styleName, value)
+	{
+		Reflect.setField(context.node.style, styleName, value);
+	}
+	
+	function removeStyle(context, styleName)
+	{
+		Reflect.setField(context.node.style, styleName, null);
+	}
+	
+	function toggleStyle(context, styleName, value)
+	{
+		if (Reflect.field(context.node.style, styleName) != "")
+		{
+			
+			removeStyle(context, styleName);
+		}
+		else
+		{
+			setStyle(context, styleName, value);
+		}
 	}
 	
 	//////////////////

@@ -36,6 +36,9 @@ Biniu.prototype = {
 	,resolveArgument: function(argument,context,biniuCallbacks) {
 		if(Reflect.hasField(biniuCallbacks,argument)) return Reflect.field(biniuCallbacks,argument);
 		if(Reflect.hasField(context.event,argument)) return Reflect.field(context.event,argument);
+		if(context.event.detail != null) {
+			if(Reflect.hasField(context.event.detail,argument)) return Reflect.field(context.event.detail,argument);
+		}
 		if(context.node.getAttribute(argument) != null) return context.node.getAttribute(argument);
 		return argument;
 	}
@@ -57,7 +60,6 @@ Biniu.prototype = {
 	}
 	,parseBiniu: function(biniu) {
 		var components = biniu.split(" ");
-		console.log(components);
 		var ret = [];
 		var _g1 = 0, _g = components.length;
 		while(_g1 < _g) {
@@ -121,43 +123,43 @@ Biniu.prototype = {
 	,__class__: Biniu
 }
 var Biniulib = function() {
-	this.map = { log : $bind(this,this.log), '+' : $bind(this,this.add), '-' : $bind(this,this.sub), '*' : $bind(this,this.mul), '/' : $bind(this,this.div), 'set-attr' : $bind(this,this.setAttribute), 'get-attr' : $bind(this,this.getAttribute), 'add-class' : $bind(this,this.addClass), 'remove-class' : $bind(this,this.removeClass), 'toggle-class' : $bind(this,this.toggleClass)};
+	this.map = { log : $bind(this,this.log), '+' : $bind(this,this.add), '-' : $bind(this,this.sub), '*' : $bind(this,this.mul), '/' : $bind(this,this.div), 'set-attr' : $bind(this,this.setAttribute), 'get-attr' : $bind(this,this.getAttribute), 'set-class' : $bind(this,this.addClass), 'remove-class' : $bind(this,this.removeClass), 'toggle-class' : $bind(this,this.toggleClass), 'set-style' : $bind(this,this.setStyle), 'remove-style' : $bind(this,this.removeStyle), 'toggle-style' : $bind(this,this.toggleStyle)};
 };
 Biniulib.__name__ = true;
-Biniulib.hasClass = function(element,className,orderedClassName) {
-	if(orderedClassName == null) orderedClassName = false;
-	if(element.className == null || StringTools.trim(element.className) == "" || className == null || StringTools.trim(className) == "") return false;
-	if(orderedClassName) {
-		var cns = className.split(" ");
-		var ecns = element.className.split(" ");
-		var result = Lambda.map(cns,function(cn) {
-			return Lambda.indexOf(ecns,cn);
-		});
-		var prevR = 0;
-		var $it0 = result.iterator();
-		while( $it0.hasNext() ) {
-			var r = $it0.next();
-			if(r < prevR) return false;
-			prevR = r;
-		}
-		return true;
-	} else {
-		var _g = 0, _g1 = className.split(" ");
-		while(_g < _g1.length) {
-			var cn = _g1[_g];
-			++_g;
-			if(cn == null || StringTools.trim(cn) == "") continue;
-			var found = Lambda.has(element.className.split(" "),cn);
-			if(!found) return false;
-		}
-		return true;
-	}
-}
 Biniulib.prototype = {
-	toggleClass: function(context,name) {
+	hasClass: function(element,className,orderedClassName) {
+		if(orderedClassName == null) orderedClassName = false;
+		if(element.className == null || StringTools.trim(element.className) == "" || className == null || StringTools.trim(className) == "") return false;
+		if(orderedClassName) {
+			var cns = className.split(" ");
+			var ecns = element.className.split(" ");
+			var result = Lambda.map(cns,function(cn) {
+				return Lambda.indexOf(ecns,cn);
+			});
+			var prevR = 0;
+			var $it0 = result.iterator();
+			while( $it0.hasNext() ) {
+				var r = $it0.next();
+				if(r < prevR) return false;
+				prevR = r;
+			}
+			return true;
+		} else {
+			var _g = 0, _g1 = className.split(" ");
+			while(_g < _g1.length) {
+				var cn = _g1[_g];
+				++_g;
+				if(cn == null || StringTools.trim(cn) == "") continue;
+				var found = Lambda.has(element.className.split(" "),cn);
+				if(!found) return false;
+			}
+			return true;
+		}
+	}
+	,toggleClass: function(context,name) {
 		var element = context.node;
 		var className = name;
-		if(Biniulib.hasClass(element,className)) this.removeClass(context,className); else this.addClass(context,className);
+		if(this.hasClass(element,className)) this.removeClass(context,className); else this.addClass(context,className);
 	}
 	,removeClass: function(context,name) {
 		var element = context.node;
@@ -180,6 +182,15 @@ Biniulib.prototype = {
 				element.className += cn;
 			}
 		});
+	}
+	,toggleStyle: function(context,styleName,value) {
+		if(Reflect.field(context.node.style,styleName) != "") this.removeStyle(context,styleName); else this.setStyle(context,styleName,value);
+	}
+	,removeStyle: function(context,styleName) {
+		context.node.style[styleName] = null;
+	}
+	,setStyle: function(context,styleName,value) {
+		context.node.style[styleName] = value;
 	}
 	,getAttribute: function(context,attr) {
 		return context.node.getAttribute(attr);
